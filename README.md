@@ -81,3 +81,7 @@ npm run dist
 ├── package.json
 └── vite.config.ts
 ```
+
+### 界面
+- <img src="./images/PixPin_20261026_191630.png" alt="" width="1000">
+- <img src="./images/PixPin_20261026_191645.png" alt="" width="1000">

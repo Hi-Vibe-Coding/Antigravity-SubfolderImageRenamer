@@ -33,6 +33,18 @@
     </div>
 
     <div class="action-wrap">
+      <!-- 路径与改名示例按钮 -->
+      <el-button
+        type="info"
+        plain
+        size="large"
+        class="example-btn"
+        @click="showExampleDialog = true"
+      >
+        <el-icon class="el-icon--left"><Document /></el-icon>
+        路径与改名示例
+      </el-button>
+
       <el-button
         v-if="store.hasRenamed && store.selectedEligibleItems.length === 0"
         type="success"
@@ -56,14 +68,48 @@
         开始改名操作 ({{ store.selectedEligibleItems.length }})
       </el-button>
     </div>
+
+    <!-- 路径与改名示例小面板弹窗 -->
+    <el-dialog
+      v-model="showExampleDialog"
+      title="路径与改名示例"
+      width="580px"
+      append-to-body
+      center
+      destroy-on-close
+    >
+      <div class="example-panel-content">
+        <div class="example-desc-hint">
+          结构说明：在各直接子文件夹（如 <code>B0-001</code>）下的纯数字图片，将自动添加该子文件夹名作为前缀：
+        </div>
+        <pre class="example-code-block"><code>Bracelet/ (父文件夹)
+ ├── B0-001/ (子文件夹)
+ │    ├── 1.png   ──>  改名为: B0-001__1.png
+ │    ├── 2.png   ──>  改名为: B0-001__2.png
+ │    └── 3.png   ──>  改名为: B0-001__3.png
+ ├── B0-002/ (子文件夹)
+ │    └── 1.png   ──>  改名为: B0-002__1.png
+ ├── B0-003/ (子文件夹)
+ │    └── 2.png   ──>  改名为: B0-003__2.png
+ └── B0-004/ (子文件夹)
+      └── 3.png   ──>  改名为: B0-004__3.png</code></pre>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" size="default" @click="showExampleDialog = false">我知道了</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </footer>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useAppStore } from '../stores/appStore'
 import { ElMessageBox } from 'element-plus'
 
 const store = useAppStore()
+const showExampleDialog = ref(false)
 
 function confirmRename() {
   const count = store.selectedEligibleItems.length
@@ -135,5 +181,53 @@ function confirmRename() {
   font-size: 15px;
   font-weight: 600;
   box-shadow: 0 4px 14px rgba(64, 158, 255, 0.3);
+}
+
+.example-btn {
+  font-weight: 500;
+}
+
+.example-panel-content {
+  padding: 0 8px;
+}
+
+.example-desc-hint {
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.example-desc-hint code {
+  background-color: #fef3c7;
+  color: #b45309;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.example-code-block {
+  background-color: #0f172a;
+  color: #38bdf8;
+  font-family: Consolas, 'Cascadia Code', 'Fira Code', Menlo, Monaco, monospace;
+  font-size: 13px;
+  line-height: 1.65;
+  padding: 16px 18px;
+  border-radius: 8px;
+  overflow-x: auto;
+  border: 1px solid #1e293b;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+  margin: 0;
+}
+
+.example-code-block code {
+  white-space: pre;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
 }
 </style>

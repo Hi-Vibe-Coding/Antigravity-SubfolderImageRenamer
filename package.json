@@ -13,20 +13,18 @@
   "build": {
     "appId": "com.antigravity.subfolderimagerenamer",
     "productName": "Antigravity-SubfolderImageRenamer",
-    "compression": "normal",
+    "compression": "maximum",
+    "electronLanguages": ["zh-CN", "en-US"],
     "directories": {
       "output": "dist-release"
     },
     "win": {
       "target": [
         {
-          "target": "portable",
+          "target": "dir",
           "arch": ["x64"]
         }
       ]
-    },
-    "portable": {
-      "artifactName": "Antigravity-SubfolderImageRenamer(v${version}).${ext}"
     },
     "files": [
       "dist/**/*",
@@ -40,13 +38,12 @@
   ],
   "author": "",
   "license": "ISC",
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "element-plus": "^2.14.7",
     "pinia": "^4.1.0",
-    "vue": "^3.5.44"
-  },
-  "devDependencies": {
+    "vue": "^3.5.44",
     "@types/node": "^26.6.5",
     "@vitejs/plugin-vue": "^6.0.10",
     "electron": "^45.0.0",
