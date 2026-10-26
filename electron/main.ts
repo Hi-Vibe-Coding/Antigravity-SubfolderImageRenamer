@@ -16,14 +16,14 @@ const VITE_DEV_SERVER_URL = process.env['VITE_DEV_SERVER_URL']
 
 function createWindow() {
   win = new BrowserWindow({
-    title: '子文件夹图片自动化命名工具',
+    title: 'Antigravity-SubfolderImageRenamer(v0.0.1)',
     width: 1080,
     height: 760,
     minWidth: 860,
     minHeight: 600,
     icon: path.join(process.env.VITE_PUBLIC || '', 'icon.ico'),
     webPreferences: {
-      preload: path.join(currentDir, 'preload.js'),
+      preload: path.join(currentDir, 'preload.cjs'),
       nodeIntegration: false,
       contextIsolation: true
     },
@@ -35,6 +35,14 @@ function createWindow() {
   } else {
     win.loadFile(path.join(process.env.DIST, 'index.html'))
   }
+
+  // 阻止 Electron 窗口因拖拽文件而意外导航或弹出新窗口
+  win.webContents.on('will-navigate', (event) => {
+    event.preventDefault()
+  })
+  win.webContents.setWindowOpenHandler(() => {
+    return { action: 'deny' }
+  })
 }
 
 app.on('window-all-closed', () => {
@@ -143,6 +151,71 @@ ipcMain.handle('scanner:scan-subfolders', async (_event, folderPaths: string[]) 
       }
     } catch (err: any) {
       console.error(`Error scanning folder ${folderPath}:`, err)
+    }
+  }
+
+  return results
+})
+
+// 模式2：父文件夹扫描（如 Bracelet 下有 B0-001, B0-002，扫描这些子文件夹第一层图片）
+ipcMain.handle('scanner:scan-parentfolders', async (_event, parentFolderPaths: string[]) => {
+  const results: ScanItem[] = []
+
+  for (const parentPath of parentFolderPaths) {
+    try {
+      const parentStat = await fs.promises.stat(parentPath)
+      if (!parentStat.isDirectory()) continue
+
+      // 读取父文件夹下的所有子文件夹（如 B0-001, B0-002...）
+      const subEntries = await fs.promises.readdir(parentPath, { withFileTypes: true })
+
+      for (const subEntry of subEntries) {
+        if (!subEntry.isDirectory()) continue
+
+        const subFolderPath = path.join(parentPath, subEntry.name)
+        const subFolderName = subEntry.name
+
+        try {
+          const files = await fs.promises.readdir(subFolderPath, { withFileTypes: true })
+          for (const fileEntry of files) {
+            if (!fileEntry.isFile()) continue
+
+            const ext = path.extname(fileEntry.name).toLowerCase()
+            if (!SUPPORTED_EXTS.has(ext)) continue
+
+            const baseName = path.basename(fileEntry.name, path.extname(fileEntry.name))
+            const isPureNumber = /^\d+$/.test(baseName)
+            const filePath = path.join(subFolderPath, fileEntry.name)
+
+            let targetName = fileEntry.name
+            let targetPath = filePath
+
+            if (isPureNumber) {
+              // 关键：以所属直接子文件夹名（如 B0-001）为前缀
+              targetName = `${subFolderName}__${fileEntry.name}`
+              targetPath = path.join(subFolderPath, targetName)
+            }
+
+            results.push({
+              id: `${subFolderPath}::${fileEntry.name}`,
+              folderPath: subFolderPath,
+              folderName: subFolderName, // 显示直接子文件夹名称（例如 B0-001）
+              fileName: fileEntry.name,
+              fileExt: ext,
+              filePath,
+              isPureNumber,
+              targetName,
+              targetPath,
+              checked: isPureNumber,
+              status: 'pending'
+            })
+          }
+        } catch (subErr) {
+          console.error(`Error scanning subfolder ${subFolderPath}:`, subErr)
+        }
+      }
+    } catch (err: any) {
+      console.error(`Error scanning parent folder ${parentPath}:`, err)
     }
   }
 

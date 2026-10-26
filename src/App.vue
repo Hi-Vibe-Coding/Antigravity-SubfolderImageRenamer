@@ -18,6 +18,7 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import HeaderBar from './components/HeaderBar.vue'
 import FolderDropZone from './components/FolderDropZone.vue'
 import ResultTable from './components/ResultTable.vue'
@@ -25,6 +26,21 @@ import FooterBar from './components/FooterBar.vue'
 import { useAppStore } from './stores/appStore'
 
 const store = useAppStore()
+
+function preventDefaultDrag(e: DragEvent) {
+  e.preventDefault()
+}
+
+onMounted(() => {
+  // 全局拦截窗口任何区域的拖拽默认行为，避免浏览器导航或打开空白新窗口
+  window.addEventListener('dragover', preventDefaultDrag, false)
+  window.addEventListener('drop', preventDefaultDrag, false)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('dragover', preventDefaultDrag)
+  window.removeEventListener('drop', preventDefaultDrag)
+})
 </script>
 
 <style scoped>

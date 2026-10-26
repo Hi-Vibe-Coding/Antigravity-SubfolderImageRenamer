@@ -1,4 +1,4 @@
-# 子文件夹图片自动化命名工具 (Subfolder Image Renamer)
+# Antigravity-SubfolderImageRenamer (v0.0.1)
 
 基于 **Electron + Vue 3 + TypeScript + Vite + Element Plus** 构建的桌面端自动化图片批量重命名工具。
 

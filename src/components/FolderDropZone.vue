@@ -12,11 +12,13 @@
       <div class="empty-icon-wrap">
         <el-icon :size="56" color="#94a3b8"><FolderAdd /></el-icon>
       </div>
-      <h3 class="empty-title">拖拽子文件夹到此处，或点击按钮添加</h3>
+      <h3 class="empty-title">
+        拖拽{{ store.currentMode === 'subfolder' ? '子文件夹' : '父文件夹' }}到此处，或点击按钮添加
+      </h3>
       <p class="empty-desc">
         {{ store.currentMode === 'subfolder' 
            ? '模式1：支持拖入或多次添加目标子文件夹，系统将扫描每个子文件夹的第一层图片' 
-           : '模式2：父文件夹模式，扫描该父级下的所有子文件夹' }}
+           : '模式2：父文件夹模式，添加如 Bracelet 等父级，系统自动扫描其下所有子文件夹的第一层图片' }}
       </p>
       <el-button
         type="primary"
@@ -26,7 +28,7 @@
         :disabled="store.isScanning || store.hasScanned"
         @click="handleSelectFolders"
       >
-        添加子文件夹
+        添加{{ store.currentMode === 'subfolder' ? '子文件夹' : '父文件夹' }}
       </el-button>
     </div>
 
@@ -34,7 +36,7 @@
     <div v-else class="content-state">
       <div class="toolbar">
         <div class="toolbar-left">
-          <span class="folder-count-badge">已添加 {{ store.folders.length }} 个文件夹</span>
+          <span class="folder-count-badge">已添加 {{ store.folders.length }} 个{{ store.currentMode === 'subfolder' ? '子文件夹' : '父文件夹' }}</span>
           <span v-if="store.hasScanned" class="lock-tip">
             <el-icon><Lock /></el-icon> 扫描已开始，文件夹列表已锁定
           </span>
@@ -48,7 +50,7 @@
             :disabled="store.isScanning || store.hasScanned"
             @click="handleSelectFolders"
           >
-            继续添加子文件夹
+            继续添加{{ store.currentMode === 'subfolder' ? '子文件夹' : '父文件夹' }}
           </el-button>
         </div>
       </div>
@@ -61,9 +63,26 @@
           class="folder-card"
           :title="folder.path"
         >
+          <!-- 文件夹上方精致生动的大图标 -->
           <div class="folder-icon-box">
-            <el-icon :size="32" color="#e6a23c"><FolderFilled /></el-icon>
+            <svg class="folder-svg-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- 文件夹背板 -->
+              <path d="M8 15C8 12.7909 9.79086 11 12 11H25.1716C26.2324 11 27.2498 11.4214 28 12.1716L32.8284 17C33.5786 17.7502 34.596 18.1716 35.6569 18.1716H52C54.2091 18.1716 56 19.9624 56 22.1716V48C56 50.2091 54.2091 52 52 52H12C9.79086 52 8 50.2091 8 48V15Z" fill="#D97706"/>
+              <!-- 文件夹内衬白纸效果 -->
+              <rect x="14" y="16" width="36" height="10" rx="2" fill="#FFFFFF" fill-opacity="0.9"/>
+              <!-- 文件夹正面盖板 (明亮温暖的黄金渐变) -->
+              <path d="M8 23C8 20.7909 9.79086 19 12 19H52C54.2091 19 56 20.7909 56 23V48C56 50.2091 54.2091 52 52 52H12C9.79086 52 8 50.2091 8 48V23Z" fill="url(#front_grad)"/>
+              <!-- 顶部微光高光 -->
+              <path d="M12 20H52C53.6569 20 55 21.3431 55 23V24H9V23C9 21.3431 10.3431 20 12 20Z" fill="#FEF3C7" fill-opacity="0.5"/>
+              <defs>
+                <linearGradient id="front_grad" x1="32" y1="19" x2="32" y2="52" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#FBBF24"/>
+                  <stop offset="1" stop-color="#F59E0B"/>
+                </linearGradient>
+              </defs>
+            </svg>
           </div>
+          <!-- 文件夹名称文本 (如 B0-001) -->
           <div class="folder-name" :title="folder.name">{{ folder.name }}</div>
           <button
             v-if="!store.isScanning && !store.hasScanned"
@@ -96,7 +115,11 @@
       <div class="bottom-action-panel">
         <div class="action-hint">
           <el-icon><InfoFilled /></el-icon>
-          <span>将扫描各子文件夹下第一层的 png, jpg, jpeg, webp 格式图片</span>
+          <span>
+            {{ store.currentMode === 'subfolder' 
+               ? '将扫描各子文件夹第一层的 png, jpg, jpeg, webp 格式图片' 
+               : '将自动扫描父级目录下全部子文件夹第一层的 png, jpg, jpeg, webp 格式图片' }}
+          </span>
         </div>
         <el-button
           type="primary"
@@ -122,6 +145,7 @@ import { ElMessage } from 'element-plus'
 
 const store = useAppStore()
 const isDragOver = ref(false)
+let dragCounter = 0
 
 async function handleSelectFolders() {
   if (store.isScanning || store.hasScanned) return
@@ -137,19 +161,28 @@ async function handleSelectFolders() {
 
 function handleDragEnter(e: DragEvent) {
   if (store.isScanning || store.hasScanned) return
+  dragCounter++
   isDragOver.value = true
 }
 
 function handleDragOver(e: DragEvent) {
   if (store.isScanning || store.hasScanned) return
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'copy'
+  }
   isDragOver.value = true
 }
 
 function handleDragLeave(e: DragEvent) {
-  isDragOver.value = false
+  dragCounter--
+  if (dragCounter <= 0) {
+    dragCounter = 0
+    isDragOver.value = false
+  }
 }
 
 async function handleDrop(e: DragEvent) {
+  dragCounter = 0
   isDragOver.value = false
   if (store.isScanning || store.hasScanned) return
 
@@ -159,8 +192,12 @@ async function handleDrop(e: DragEvent) {
   const paths: string[] = []
   for (let i = 0; i < files.length; i++) {
     const file = files[i]
-    // Electron 环境下 File 对象带有 path 属性
-    const p = (file as any).path
+    let p = ''
+    if (window.electronAPI && typeof window.electronAPI.getPathForFile === 'function') {
+      p = window.electronAPI.getPathForFile(file)
+    } else {
+      p = (file as any).path || ''
+    }
     if (p) {
       paths.push(p)
     }
@@ -312,14 +349,27 @@ async function handleDrop(e: DragEvent) {
   justify-content: center;
 }
 
+.folder-svg-icon {
+  width: 52px;
+  height: 52px;
+  filter: drop-shadow(0 3px 4px rgba(217, 119, 6, 0.2));
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.folder-card:hover .folder-svg-icon {
+  transform: scale(1.08) translateY(-2px);
+  filter: drop-shadow(0 6px 8px rgba(217, 119, 6, 0.28));
+}
+
 .folder-name {
   font-size: 13px;
-  font-weight: 500;
-  color: #334155;
+  font-weight: 600;
+  color: #1e293b;
   width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding: 0 4px;
 }
 
 .remove-btn {
@@ -377,6 +427,7 @@ async function handleDrop(e: DragEvent) {
   border-radius: 10px;
   z-index: 10;
   backdrop-filter: blur(2px);
+  pointer-events: none;
 }
 
 .bottom-action-panel {

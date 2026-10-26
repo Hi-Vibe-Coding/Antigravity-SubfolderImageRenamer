@@ -5,7 +5,7 @@
         <el-icon :size="22" color="#409eff"><PictureFilled /></el-icon>
       </div>
       <div class="title-wrap">
-        <span class="app-title">文件夹图片自动化命名工具</span>
+        <span class="app-title">子文件夹图片自动化命名工具</span>
         <span class="app-subtitle">{{ store.currentModeLabel }}</span>
       </div>
     </div>

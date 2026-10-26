@@ -1,18 +1,25 @@
 <template>
   <footer class="app-footer">
     <div class="progress-wrap">
-      <div v-if="store.isRenaming || store.renameProgress.total > 0" class="progress-info">
+      <div v-if="store.isRenaming || store.hasRenamed" class="progress-info">
         <span class="progress-text">
-          {{ store.isRenaming ? '正在改名中...' : '改名完成' }}
-          ({{ store.renameProgress.current }} / {{ store.renameProgress.total }})
+          <template v-if="store.isRenaming">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            正在改名中... ({{ store.renameProgress.current }} / {{ store.renameProgress.total }})
+          </template>
+          <template v-else>
+            <el-icon color="#67c23a" :size="16"><CircleCheckFilled /></el-icon>
+            改名已完成：成功 {{ store.renameSummary.success }} 个
+            <span v-if="store.renameSummary.error > 0" class="text-danger">（失败 {{ store.renameSummary.error }} 个）</span>
+          </template>
         </span>
         <el-progress
           :percentage="store.renameProgress.percent"
-          :status="store.renameProgress.percent === 100 ? 'success' : undefined"
+          :status="store.renameSummary.error > 0 ? 'warning' : 'success'"
           :stroke-width="10"
           striped
           :striped-flow="store.isRenaming"
-          style="width: 260px"
+          style="width: 240px"
         />
       </div>
       <div v-else class="idle-info">
@@ -27,6 +34,17 @@
 
     <div class="action-wrap">
       <el-button
+        v-if="store.hasRenamed && store.selectedEligibleItems.length === 0"
+        type="success"
+        plain
+        size="large"
+        @click="store.rescanOrModifyFolders"
+      >
+        <el-icon class="el-icon--left"><RefreshRight /></el-icon>
+        已全部完成 (返回增减文件夹)
+      </el-button>
+      <el-button
+        v-else
         type="primary"
         size="large"
         class="rename-btn"
@@ -91,6 +109,14 @@ function confirmRename() {
   font-size: 13px;
   font-weight: 500;
   color: #374151;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.text-danger {
+  color: #ef4444;
+  margin-left: 4px;
 }
 
 .idle-info {

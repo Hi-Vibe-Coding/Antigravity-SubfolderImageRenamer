@@ -12,7 +12,9 @@ export const useAppStore = defineStore('app', () => {
   const hasScanned = ref(false)
   const scanResults = ref<ScanItem[]>([])
   const isRenaming = ref(false)
+  const hasRenamed = ref(false)
   const renameProgress = ref({ current: 0, total: 0, percent: 0 })
+  const renameSummary = ref({ success: 0, error: 0, skipped: 0 })
 
   // 模式文本映射
   const modeLabels: Record<OperationMode, string> = {
@@ -71,14 +73,20 @@ export const useAppStore = defineStore('app', () => {
   // 开始扫描
   async function startScan() {
     if (folders.value.length === 0) {
-      ElMessage.warning('请先添加至少一个子文件夹')
+      ElMessage.warning(currentMode.value === 'subfolder' ? '请先添加至少一个子文件夹' : '请先添加至少一个父文件夹')
       return
     }
 
     isScanning.value = true
     try {
       const folderPaths = folders.value.map(f => f.path)
-      const results = await window.electronAPI.scanSubfolders(folderPaths)
+      let results: ScanItem[] = []
+      if (currentMode.value === 'subfolder') {
+        results = await window.electronAPI.scanSubfolders(folderPaths)
+      } else {
+        results = await window.electronAPI.scanParentfolders(folderPaths)
+      }
+
       scanResults.value = results
       hasScanned.value = true
 
@@ -100,6 +108,8 @@ export const useAppStore = defineStore('app', () => {
     }
 
     isRenaming.value = true
+    hasRenamed.value = false
+    renameSummary.value = { success: 0, error: 0, skipped: 0 }
     renameProgress.value = { current: 0, total: targets.length, percent: 0 }
 
     const removeListener = window.electronAPI.onRenameProgress(prog => {
@@ -115,7 +125,6 @@ export const useAppStore = defineStore('app', () => {
         scanResults.value[targetIndex].status = prog.item.status
         scanResults.value[targetIndex].errorMsg = prog.item.errorMsg
         if (prog.item.status === 'success') {
-          // 重命名成功后更新原文件名与路径
           scanResults.value[targetIndex].fileName = prog.item.targetName
           scanResults.value[targetIndex].filePath = prog.item.targetPath
           scanResults.value[targetIndex].isPureNumber = false
@@ -124,8 +133,50 @@ export const useAppStore = defineStore('app', () => {
     })
 
     try {
-      await window.electronAPI.executeRename(targets)
-      ElMessage.success('批量改名执行完成！')
+      const plainTargets = JSON.parse(JSON.stringify(targets))
+      const results = await window.electronAPI.executeRename(plainTargets)
+
+      // 无论 IPC 进度事件是否有微弱延迟，以主进程返回的最终结果为准全量核对
+      let successCount = 0
+      let errorCount = 0
+      let skippedCount = 0
+
+      for (const res of results) {
+        const targetIndex = scanResults.value.findIndex(item => item.id === res.id)
+        if (targetIndex !== -1) {
+          scanResults.value[targetIndex].status = res.status
+          scanResults.value[targetIndex].errorMsg = res.errorMsg
+          if (res.status === 'success') {
+            scanResults.value[targetIndex].fileName = res.targetName
+            scanResults.value[targetIndex].filePath = res.targetPath
+            scanResults.value[targetIndex].isPureNumber = false
+            successCount++
+          } else if (res.status === 'error') {
+            errorCount++
+          } else {
+            skippedCount++
+          }
+        }
+      }
+
+      renameSummary.value = {
+        success: successCount,
+        error: errorCount,
+        skipped: skippedCount
+      }
+
+      renameProgress.value = {
+        current: targets.length,
+        total: targets.length,
+        percent: 100
+      }
+      hasRenamed.value = true
+
+      if (errorCount === 0) {
+        ElMessage.success(`批量改名成功！共重命名 ${successCount} 个文件`)
+      } else {
+        ElMessage.warning(`批量改名完成：成功 ${successCount} 个，失败 ${errorCount} 个`)
+      }
     } catch (err: any) {
       ElMessage.error(`改名过程发生异常：${err.message || '未知错误'}`)
     } finally {
@@ -141,14 +192,18 @@ export const useAppStore = defineStore('app', () => {
     hasScanned.value = false
     isScanning.value = false
     isRenaming.value = false
+    hasRenamed.value = false
     renameProgress.value = { current: 0, total: 0, percent: 0 }
+    renameSummary.value = { success: 0, error: 0, skipped: 0 }
   }
 
   // 重新选择文件/返回上一阶段
   function rescanOrModifyFolders() {
     hasScanned.value = false
     scanResults.value = []
+    hasRenamed.value = false
     renameProgress.value = { current: 0, total: 0, percent: 0 }
+    renameSummary.value = { success: 0, error: 0, skipped: 0 }
   }
 
   return {
@@ -159,7 +214,9 @@ export const useAppStore = defineStore('app', () => {
     hasScanned,
     scanResults,
     isRenaming,
+    hasRenamed,
     renameProgress,
+    renameSummary,
     eligibleItems,
     selectedEligibleItems,
     addFolders,

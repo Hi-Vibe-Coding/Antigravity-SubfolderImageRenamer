@@ -1,6 +1,6 @@
 {
-  "name": "subfolder-image-renamer",
-  "version": "1.0.0",
+  "name": "antigravity-subfolderimagerenamer",
+  "version": "0.0.1",
   "type": "module",
   "description": "Folder image automated renamer tool built with Electron and Vue 3",
   "main": "dist-electron/main.js",
@@ -12,10 +12,10 @@
   },
   "build": {
     "appId": "com.antigravity.subfolderimagerenamer",
-    "productName": "子文件夹图片自动化命名工具",
-    "compression": "store",
+    "productName": "Antigravity-SubfolderImageRenamer",
+    "compression": "normal",
     "directories": {
-      "output": "release"
+      "output": "dist-release"
     },
     "win": {
       "target": [
@@ -26,7 +26,7 @@
       ]
     },
     "portable": {
-      "artifactName": "${name}-portable.${ext}"
+      "artifactName": "Antigravity-SubfolderImageRenamer(v${version}).${ext}"
     },
     "files": [
       "dist/**/*",
