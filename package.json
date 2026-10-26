@@ -1,0 +1,60 @@
+{
+  "name": "subfolder-image-renamer",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Folder image automated renamer tool built with Electron and Vue 3",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "build:green": "vite build && electron-builder --win dir"
+  },
+  "build": {
+    "appId": "com.antigravity.subfolderimagerenamer",
+    "productName": "子文件夹图片自动化命名工具",
+    "compression": "store",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "${name}-portable.${ext}"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ]
+  },
+  "keywords": [
+    "electron",
+    "vue3",
+    "image-renamer"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "element-plus": "^2.14.7",
+    "pinia": "^4.1.0",
+    "vue": "^3.5.44"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vite-plugin-electron": "^1.1.2",
+    "vite-plugin-electron-renderer": "^1.0.0",
+    "vue-tsc": "^3.3.13"
+  }
+}
